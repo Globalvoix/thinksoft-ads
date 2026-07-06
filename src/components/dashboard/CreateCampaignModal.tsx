@@ -902,6 +902,8 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
                         } else {
                           window.location.href = result.checkoutUrl
                         }
+                      } else {
+                        if (paymentWindow) paymentWindow.close()
                       }
                       setIsPublished(true)
                     } catch (e) {

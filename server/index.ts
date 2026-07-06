@@ -75,7 +75,18 @@ const PORT = process.env.PORT || 4000
 app.use(cors({ origin: true }))
 app.use(express.json({ limit: '10mb' }))
 
-
+// --- Debug: check LS config ---
+app.get('/api/debug', (req, res) => {
+  res.json({
+    hasLs: hasLemonSqueezy,
+    hasApiKey: !!LS_API_KEY,
+    hasStoreId: !!LS_STORE_ID,
+    hasVariantId: !!LS_VARIANT_ID,
+    storeId: LS_STORE_ID || 'missing',
+    variantId: LS_VARIANT_ID || 'missing',
+    apiKeyPrefix: LS_API_KEY ? LS_API_KEY.slice(0, 20) + '...' : 'missing',
+  })
+})
 
 function uid() {
   return crypto.randomUUID()
