@@ -864,8 +864,14 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
                 <button
                   onClick={async () => {
                     setIsSaving(true)
+                    // Open window preemptively so browser doesn't block it as popup
+                    const paymentWindow = window.open('', '_blank')
                     try {
-                      const displayUrl = destinationUrl ? new URL(destinationUrl).hostname.replace('www.', '') : 'thinksoft.dev'
+                      let displayUrl = 'thinksoft.dev'
+                      try {
+                        if (destinationUrl) displayUrl = new URL(destinationUrl).hostname.replace('www.', '')
+                      } catch { /* use fallback */ }
+
                       const result = await apiFetch<any>('/api/campaigns', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -891,10 +897,15 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
                           })
                       })
                       if (result.checkoutUrl) {
-                        window.open(result.checkoutUrl, '_blank')
+                        if (paymentWindow) {
+                          paymentWindow.location.href = result.checkoutUrl
+                        } else {
+                          window.location.href = result.checkoutUrl
+                        }
                       }
                       setIsPublished(true)
                     } catch (e) {
+                      if (paymentWindow) paymentWindow.close()
                       alert('Failed to save campaign: ' + (e instanceof Error ? e.message : 'Network error'))
                     } finally {
                       setIsSaving(false)
