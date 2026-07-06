@@ -1,0 +1,31 @@
+{
+  "description": "Fetches Thinksoft ads and patches Claude Code spinner text",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/patch-spinner.cjs"],
+            "timeout": 30,
+            "statusMessage": "Fetching Thinksoft ad..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/show-completion-ad.cjs"],
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

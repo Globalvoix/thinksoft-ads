@@ -1,0 +1,30 @@
+{
+  "name": "thinksoft-ads",
+  "displayName": "Thinksoft Ads",
+  "version": "1.0.0",
+  "description": "Replaces Claude Code thinking spinners with Thinksoft ad content. Each session shows a different ad from your campaigns.",
+  "author": {
+    "name": "Thinksoft",
+    "url": "https://thinksoft.dev"
+  },
+  "homepage": "https://thinksoft.dev",
+  "license": "MIT",
+  "keywords": ["thinksoft", "ads", "spinner", "thinking"],
+  "defaultEnabled": true,
+  "userConfig": {
+    "api_base": {
+      "type": "string",
+      "title": "API base URL",
+      "description": "Thinksoft Ads API server URL",
+      "default": "http://localhost:4000",
+      "required": true
+    },
+    "campaign_id": {
+      "type": "string",
+      "title": "Campaign ID (optional)",
+      "description": "Only show ads from a specific campaign. Leave empty for all serving ads.",
+      "required": false
+    }
+  },
+  "hooks": "./hooks/hooks.json"
+}
