@@ -75,6 +75,8 @@ const PORT = process.env.PORT || 4000
 app.use(cors({ origin: true }))
 app.use(express.json({ limit: '10mb' }))
 
+
+
 function uid() {
   return crypto.randomUUID()
 }
@@ -182,60 +184,69 @@ app.get('/api/campaigns', requireAuth, async (req, res) => {
 
 // POST /api/campaigns
 app.post('/api/campaigns', requireAuth, async (req, res) => {
-  const userId = req.auth?.userId
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' })
+  try {
+    const userId = req.auth?.userId
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' })
 
-  const {
-    name, objective, location, budgetType, budgetAmount,
-    startDate, endDate, connectorType, connectorCategory, selectedConnectors,
-    adGroupName, maxCpcBid, destinationUrl, displayUrl, contextHints, targetedKeywords,
-    headline, description, cta, logoUrl, bannerUrl
-  } = req.body
+    const {
+      name, objective, location, budgetType, budgetAmount,
+      startDate, endDate, connectorType, connectorCategory, selectedConnectors,
+      adGroupName, maxCpcBid, destinationUrl, displayUrl, contextHints, targetedKeywords,
+      headline, description, cta, logoUrl, bannerUrl
+    } = req.body
 
-  const campaignId = uid()
-  const adId = uid()
+    const campaignId = uid()
+    const adId = uid()
 
-  const initialStatus = hasLemonSqueezy ? 'Pending Payment' : 'Serving'
+    const initialStatus = hasLemonSqueezy ? 'Pending Payment' : 'Serving'
 
-  // Create campaign
-  await sql`
-    INSERT INTO campaigns (id, user_id, name, objective, location, budget_type, budget_amount, start_at, end_at, status, connector_type, connector_category, selected_connectors)
-    VALUES (${campaignId}, ${userId}, ${name || 'Untitled'}, ${objective || 'Clicks'}, ${location || 'All'}, ${budgetType || 'Daily budget'}, ${budgetAmount || 25}, ${startDate || now()}, ${endDate || null}, ${initialStatus}, ${connectorType || 'Chrome extension'}, ${connectorCategory || 'Web browsers & search engines'}, ${selectedConnectors || []})
-  `
+    // Serialize array to PostgreSQL format for neon driver
+    const pgArray = Array.isArray(selectedConnectors) && selectedConnectors.length
+      ? `{${selectedConnectors.map((s: string) => `"${s.replace(/"/g, '\\"')}"`).join(',')}}`
+      : '{}'
 
-  // Create ad
-  await sql`
-    INSERT INTO ads (id, campaign_id, ad_group_name, max_cpc_bid, destination_url, display_url, context_hints, targeted_keywords, headline, description, cta, logo_url, banner_url)
-    VALUES (${adId}, ${campaignId}, ${adGroupName || ''}, ${maxCpcBid || 0}, ${destinationUrl || ''}, ${displayUrl || ''}, ${contextHints || ''}, ${targetedKeywords || ''}, ${headline || ''}, ${description || ''}, ${cta || 'Learn more'}, ${logoUrl || ''}, ${bannerUrl || ''})
-  `
-
-  // Save keywords for search matching — use targetedKeywords (browser) or contextHints (chatbot)
-  let kwSource = connectorCategory === 'Web browsers' ? targetedKeywords : contextHints
-  // If the primary source is empty, fall back to the other field
-  if (!kwSource) kwSource = connectorCategory === 'Web browsers' ? contextHints : targetedKeywords
-  const keywords = (kwSource || '')
-    .split(/[\n,]+/)
-    .map((k: string) => k.trim().toLowerCase())
-    .filter((k: string) => k.length > 0)
-
-  for (const keyword of keywords) {
+    // Create campaign
     await sql`
-      INSERT INTO ad_keywords (id, ad_id, keyword)
-      VALUES (${uid()}, ${adId}, ${keyword})
+      INSERT INTO campaigns (id, user_id, name, objective, location, budget_type, budget_amount, start_at, end_at, status, connector_type, connector_category, selected_connectors)
+      VALUES (${campaignId}, ${userId}, ${name || 'Untitled'}, ${objective || 'Clicks'}, ${location || 'All'}, ${budgetType || 'Daily budget'}, ${budgetAmount || 25}, ${startDate || now()}, ${endDate || null}, ${initialStatus}, ${connectorType || 'Chrome extension'}, ${connectorCategory || 'Web browsers & search engines'}, ${pgArray})
     `
-  }
 
-  // Calculate total charge
-  const baseAmount = parseFloat(budgetAmount) || 25
-  let totalAmount = baseAmount
-  if (budgetType === 'Daily budget' && startDate && endDate) {
-    const days = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
-    totalAmount = baseAmount * days
-  }
-  const amountCents = Math.round(totalAmount * 100)
-  const checkoutUrl = await createLsCheckout(amountCents, campaignId, userId, name || 'Untitled')
+    // Create ad
+    await sql`
+      INSERT INTO ads (id, campaign_id, ad_group_name, max_cpc_bid, destination_url, display_url, context_hints, targeted_keywords, headline, description, cta, logo_url, banner_url)
+      VALUES (${adId}, ${campaignId}, ${adGroupName || ''}, ${maxCpcBid || 0}, ${destinationUrl || ''}, ${displayUrl || ''}, ${contextHints || ''}, ${targetedKeywords || ''}, ${headline || ''}, ${description || ''}, ${cta || 'Learn more'}, ${logoUrl || ''}, ${bannerUrl || ''})
+    `
 
-  res.json({ campaignId, adId, checkoutUrl })
+    // Save keywords for search matching
+    let kwSource = connectorCategory === 'Web browsers' ? targetedKeywords : contextHints
+    if (!kwSource) kwSource = connectorCategory === 'Web browsers' ? contextHints : targetedKeywords
+    const keywords = (kwSource || '')
+      .split(/[\n,]+/)
+      .map((k: string) => k.trim().toLowerCase())
+      .filter((k: string) => k.length > 0)
+
+    for (const keyword of keywords) {
+      await sql`
+        INSERT INTO ad_keywords (id, ad_id, keyword)
+        VALUES (${uid()}, ${adId}, ${keyword})
+      `
+    }
+
+    // Calculate total charge
+    const baseAmount = parseFloat(budgetAmount) || 25
+    let totalAmount = baseAmount
+    if (budgetType === 'Daily budget' && startDate && endDate) {
+      const days = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
+      totalAmount = baseAmount * days
+    }
+    const amountCents = Math.round(totalAmount * 100)
+    const checkoutUrl = await createLsCheckout(amountCents, campaignId, userId, name || 'Untitled')
+
+    res.json({ campaignId, adId, checkoutUrl })
+  } catch (e) {
+    console.error('[Campaign] Error:', (e as Error).message)
+    res.status(500).json({ error: (e as Error).message || 'Campaign creation failed' })
+  }
 })
 
 // --- Smart ad serving endpoint (ranked + weighted random) ---
@@ -462,6 +473,12 @@ app.post('/api/webhooks/lemonsqueezy', async (req, res) => {
   }
 
   res.json({ ok: true })
+})
+
+// --- Global error handler (returns JSON, not HTML) ---
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('[Thinksoft] Unhandled error:', err?.message || err)
+  res.status(500).json({ error: err?.message || 'Internal server error' })
 })
 
 // --- Start ---
