@@ -76,7 +76,40 @@ app.use(cors({ origin: true }))
 app.use(express.json({ limit: '10mb' }))
 
 // --- Debug: check LS config ---
-app.get('/api/debug', (req, res) => {
+app.get('/api/debug', async (req, res) => {
+  let lsCheckResult = 'not attempted'
+  if (hasLemonSqueezy) {
+    try {
+      const r = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LS_API_KEY}`,
+          'Content-Type': 'application/vnd.api+json',
+          'Accept': 'application/vnd.api+json',
+        },
+        body: JSON.stringify({
+          data: {
+            type: 'checkouts',
+            attributes: {
+              checkout_data: {
+                custom_price: 100,
+                product_options: { name: 'Debug', description: 'Debug' },
+                checkout_options: { embed: false },
+              },
+            },
+            relationships: {
+              store: { data: { type: 'stores', id: LS_STORE_ID } },
+              variant: { data: { type: 'variants', id: LS_VARIANT_ID } },
+            },
+          },
+        }),
+      })
+      const body = await r.text()
+      lsCheckResult = `status=${r.status} body=${body.slice(0, 300)}`
+    } catch (e: any) {
+      lsCheckResult = `error=${e.message}`
+    }
+  }
   res.json({
     hasLs: hasLemonSqueezy,
     hasApiKey: !!LS_API_KEY,
@@ -84,7 +117,9 @@ app.get('/api/debug', (req, res) => {
     hasVariantId: !!LS_VARIANT_ID,
     storeId: LS_STORE_ID || 'missing',
     variantId: LS_VARIANT_ID || 'missing',
-    apiKeyPrefix: LS_API_KEY ? LS_API_KEY.slice(0, 20) + '...' : 'missing',
+    apiKeyPrefix: LS_API_KEY ? LS_API_KEY.slice(0, 25) + '...' : 'missing',
+    apiKeyLength: LS_API_KEY ? LS_API_KEY.length : 0,
+    lsApiTest: lsCheckResult,
   })
 })
 
