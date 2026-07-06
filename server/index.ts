@@ -5,15 +5,21 @@ import crypto from 'crypto'
 import sql from './db.js'
 
 let clerkMiddleware: any = null
-try {
-  const clerkMod = await import('@clerk/backend')
-  if (process.env.CLERK_SECRET_KEY) {
-    clerkMiddleware = clerkMod.ClerkExpressRequireAuth()
-    console.log('[Thinksoft API] Clerk auth enabled')
+
+// Lazy Clerk init — non-blocking for Vercel cold starts
+;(async () => {
+  try {
+    const clerkMod = await import('@clerk/backend')
+    if (process.env.CLERK_SECRET_KEY) {
+      clerkMiddleware = clerkMod.ClerkExpressRequireAuth()
+      console.log('[Thinksoft API] Clerk auth enabled')
+    } else {
+      console.log('[Thinksoft API] Clerk key not set — using dev placeholder')
+    }
+  } catch {
+    console.log('[Thinksoft API] Clerk not available — using dev placeholder')
   }
-} catch {
-  console.log('[Thinksoft API] Clerk not available — using dev placeholder')
-}
+})()
 
 // --- Lemon Squeezy config ---
 const LS_API_KEY = process.env.LEMONSQUEEZY_API_KEY || ''
@@ -87,14 +93,16 @@ function requireAuth(req: any, res: any, next: any) {
 
 // --- Schema auto-init ---
 async function initSchema() {
-  // Drop old tables if they exist with wrong schema
-  try { await sql`DROP TABLE IF EXISTS ad_events CASCADE` } catch {}
-  try { await sql`DROP TABLE IF EXISTS ad_keywords CASCADE` } catch {}
-  try { await sql`DROP TABLE IF EXISTS ads CASCADE` } catch {}
-  try { await sql`DROP TABLE IF EXISTS campaigns CASCADE` } catch {}
+  // Local dev: drop & recreate. Vercel: use IF NOT EXISTS (non-destructive).
+  if (!process.env.VERCEL) {
+    try { await sql`DROP TABLE IF EXISTS ad_events CASCADE` } catch {}
+    try { await sql`DROP TABLE IF EXISTS ad_keywords CASCADE` } catch {}
+    try { await sql`DROP TABLE IF EXISTS ads CASCADE` } catch {}
+    try { await sql`DROP TABLE IF EXISTS campaigns CASCADE` } catch {}
+  }
 
   try {
-    await sql`CREATE TABLE campaigns (
+    await sql`CREATE TABLE IF NOT EXISTS campaigns (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       name TEXT NOT NULL,
@@ -114,7 +122,7 @@ async function initSchema() {
   } catch (e) { console.error('[DB] campaigns:', (e as Error).message.slice(0, 100)) }
 
   try {
-    await sql`CREATE TABLE ads (
+    await sql`CREATE TABLE IF NOT EXISTS ads (
       id TEXT PRIMARY KEY,
       campaign_id TEXT NOT NULL,
       ad_group_name TEXT NOT NULL DEFAULT '',
@@ -133,7 +141,7 @@ async function initSchema() {
   } catch (e) { console.error('[DB] ads:', (e as Error).message.slice(0, 100)) }
 
   try {
-    await sql`CREATE TABLE ad_keywords (
+    await sql`CREATE TABLE IF NOT EXISTS ad_keywords (
       id TEXT PRIMARY KEY,
       ad_id TEXT NOT NULL,
       keyword TEXT NOT NULL
@@ -141,7 +149,7 @@ async function initSchema() {
   } catch (e) { console.error('[DB] ad_keywords:', (e as Error).message.slice(0, 100)) }
 
   try {
-    await sql`CREATE TABLE ad_events (
+    await sql`CREATE TABLE IF NOT EXISTS ad_events (
       id TEXT PRIMARY KEY,
       ad_id TEXT NOT NULL,
       event_type TEXT NOT NULL CHECK (event_type IN ('impression', 'click')),
@@ -459,6 +467,10 @@ app.post('/api/webhooks/lemonsqueezy', async (req, res) => {
 // --- Start ---
 await initSchema()
 
-app.listen(PORT, () => {
-  console.log(`[Thinksoft API] Running on http://localhost:${PORT}`)
-})
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`[Thinksoft API] Running on http://localhost:${PORT}`)
+  })
+}
+
+export default app
