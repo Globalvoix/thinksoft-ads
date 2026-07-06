@@ -10,6 +10,16 @@ import {
   X,
 } from 'lucide-react'
 
+interface ConnectorOption {
+  name: string
+  domain: string
+  fallbackIcon: React.ElementType
+  category: string
+  popular: boolean
+  comingSoon?: boolean
+  description: string
+}
+
 interface ConnectorSelectionModalProps {
   isOpen: boolean
   type: 'Chrome extension' | 'MCP' | null
@@ -17,7 +27,7 @@ interface ConnectorSelectionModalProps {
   onFinish: (category: string, connectors: string[]) => void
 }
 
-const CHROME_EXTENSION_CONNECTORS = [
+const CHROME_EXTENSION_CONNECTORS: ConnectorOption[] = [
   { name: 'Chrome Search', domain: 'google.com/search', fallbackIcon: Globe, category: 'Web browsers', popular: true, description: 'Show ads on Google and Bing search results.' },
   { name: 'Chrome', domain: 'google.com/chrome', fallbackIcon: Globe, category: 'Web browsers', popular: true, description: 'Show native ad cards in Chrome browser.' },
   { name: 'Emergent', domain: 'emergent.sh', fallbackIcon: Terminal, category: 'Development platforms', popular: true, description: 'Show ads within Emergent terminal workflows.' },
@@ -30,7 +40,7 @@ const CHROME_EXTENSION_CONNECTORS = [
 
 ]
 
-const MCP_CONNECTORS = [
+const MCP_CONNECTORS: ConnectorOption[] = [
   { name: 'ChatGPT', domain: 'chatgpt.com', fallbackIcon: Bot, category: 'AI chatbots', popular: true, description: 'Connect ChatGPT through MCP workflows.' },
   { name: 'Claude', domain: 'claude.ai', fallbackIcon: Bot, category: 'AI chatbots', popular: true, description: 'Connect Claude through MCP workflows.' },
   { name: 'Claude Code', domain: 'anthropic.com/claude-code', fallbackIcon: Terminal, category: 'AI chatbots', popular: true, description: 'Connect Claude Code command-line workflows.' },
