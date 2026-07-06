@@ -42,21 +42,21 @@ async function createLsCheckout(amountCents: number, campaignId: string, userId:
       body: JSON.stringify({
         data: {
           type: 'checkouts',
-          attributes: {
-            checkout_data: {
-              custom_price: amountCents,
-              product_options: { name: `Thinksoft: ${name}`, description: 'Advertising campaign budget' },
-              checkout_options: {
-                embed: false,
-                redirect_url: `${process.env.VITE_API_BASE_URL || 'http://localhost:5173'}/dashboard?payment=success&campaign=${campaignId}`,
-              },
-            },
-            custom: { campaign_id: campaignId, user_id: userId },
+      attributes: {
+        checkout_data: [{
+          custom_price: amountCents,
+          product_options: { name: `Thinksoft: ${name}`, description: 'Advertising campaign budget' },
+          checkout_options: {
+            embed: false,
+            redirect_url: `${process.env.VITE_API_BASE_URL || 'http://localhost:5173'}/dashboard?payment=success&campaign=${campaignId}`,
           },
-          relationships: {
-            store: { data: { type: 'stores', id: LS_STORE_ID } },
-            variant: { data: { type: 'variants', id: LS_VARIANT_ID } },
-          },
+        }],
+        custom: { campaign_id: campaignId, user_id: userId },
+      },
+      relationships: {
+        store: { data: { type: 'stores', id: LS_STORE_ID } },
+        variant: { data: { type: 'variants', id: LS_VARIANT_ID } },
+      },
         },
       }),
     })
@@ -91,11 +91,11 @@ app.get('/api/debug', async (req, res) => {
           data: {
             type: 'checkouts',
             attributes: {
-              checkout_data: {
+              checkout_data: [{
                 custom_price: 100,
                 product_options: { name: 'Debug', description: 'Debug' },
                 checkout_options: { embed: false },
-              },
+              }],
             },
             relationships: {
               store: { data: { type: 'stores', id: LS_STORE_ID } },
