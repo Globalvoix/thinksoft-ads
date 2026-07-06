@@ -155,14 +155,6 @@ function now() {
   return new Date().toISOString()
 }
 
-function requireAuth(req: any, res: any, next: any) {
-  if (clerkMiddleware) {
-    return clerkMiddleware(req, res, next)
-  }
-  req.auth = { userId: 'dev_placeholder' }
-  next()
-}
-
 // --- Schema auto-init ---
 async function initSchema() {
   // Local dev: drop & recreate. Vercel: use IF NOT EXISTS (non-destructive).
