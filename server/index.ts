@@ -4,22 +4,46 @@ import cors from 'cors'
 import crypto from 'crypto'
 import sql from './db.js'
 
-let clerkMiddleware: any = null
+// --- Clerk auth (v3 API — use verifyToken directly) ---
+let verifyClerkToken: ((token: string, opts: { secretKey: string }) => Promise<{ sub: string }>) | null = null
 
-// Lazy Clerk init — non-blocking for Vercel cold starts
-;(async () => {
-  try {
-    const clerkMod = await import('@clerk/backend')
-    if (process.env.CLERK_SECRET_KEY) {
-      clerkMiddleware = clerkMod.ClerkExpressRequireAuth()
-      console.log('[Thinksoft API] Clerk auth enabled')
-    } else {
-      console.log('[Thinksoft API] Clerk key not set — using dev placeholder')
-    }
-  } catch {
+if (process.env.CLERK_SECRET_KEY) {
+  import('@clerk/backend').then(mod => {
+    verifyClerkToken = mod.verifyToken as any
+    console.log('[Thinksoft API] Clerk auth enabled')
+  }).catch(() => {
     console.log('[Thinksoft API] Clerk not available — using dev placeholder')
+  })
+} else {
+  console.log('[Thinksoft API] Clerk key not set — using dev placeholder')
+}
+
+// Augment Express Request with auth
+declare module 'express-serve-static-core' {
+  interface Request {
+    auth?: { userId: string }
   }
-})()
+}
+
+function requireAuth(req: any, res: any, next: any) {
+  if (verifyClerkToken && process.env.CLERK_SECRET_KEY) {
+    const authHeader = req.headers.authorization
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+    verifyClerkToken(authHeader.slice(7), { secretKey: process.env.CLERK_SECRET_KEY })
+      .then(payload => {
+        req.auth = { userId: payload.sub }
+        next()
+      })
+      .catch(() => {
+        res.status(401).json({ error: 'Invalid token' })
+      })
+  } else {
+    req.auth = { userId: 'dev_placeholder' }
+    next()
+  }
+}
 
 // --- Lemon Squeezy config ---
 const LS_API_KEY = process.env.LEMONSQUEEZY_API_KEY || ''
