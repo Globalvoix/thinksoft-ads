@@ -46,10 +46,7 @@ export default function CampaignTable() {
       <table className="w-full text-left border-collapse whitespace-nowrap min-w-[1100px]">
         <thead>
           <tr className="border-b border-gray-200 bg-white">
-            <th className="py-[14px] pl-6 pr-3 w-[40px]">
-              <div className="w-3.5 h-3.5 border border-gray-300 rounded-[3px] bg-white"></div>
-            </th>
-            <th className="py-[14px] px-3 text-[12px] font-medium text-gray-500 w-[60px]">Active</th>
+            <th className="py-[14px] pl-6 pr-3 text-[12px] font-medium text-gray-500 w-[60px]">Active</th>
             <th className="py-[14px] px-3 text-[12px] font-medium text-gray-500 w-[300px]">Name</th>
             <th className="py-[14px] px-3 text-[12px] font-medium text-gray-500 w-[140px]">Status</th>
             <th className="py-[14px] px-3 text-[12px] font-medium text-gray-500 w-[100px]">Type</th>
@@ -64,7 +61,7 @@ export default function CampaignTable() {
         <tbody>
           {campaigns.length === 0 && (
             <tr>
-              <td colSpan={11} className="py-12 text-center text-sm text-gray-500">
+              <td colSpan={10} className="py-12 text-center text-sm text-gray-500">
                 No campaigns yet. Click Create to get started.
               </td>
             </tr>
@@ -72,9 +69,6 @@ export default function CampaignTable() {
           {campaigns.map((campaign) => (
             <tr key={campaign.id} className="border-b border-gray-200 hover:bg-gray-50/40 transition-colors bg-white group">
               <td className="py-5 pl-6 pr-3">
-                <div className="w-3.5 h-3.5 border border-gray-300 rounded-[3px] bg-white group-hover:border-gray-400 transition-colors"></div>
-              </td>
-              <td className="py-5 px-3">
                 <Toggle active={campaign.status === 'Serving'} onClick={() => toggleCampaign(campaign.id, campaign.status)} />
               </td>
               <td className="py-5 px-3 text-[13px] text-gray-900 font-medium">
