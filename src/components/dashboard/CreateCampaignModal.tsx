@@ -45,6 +45,7 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
   const [ctaText, setCtaText] = useState('')
   const [targetedKeywords, setTargetedKeywords] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (isOpen && initialConnector && !hasInitialized) {
@@ -244,11 +245,17 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
             {step === 1 ? (
               <>
                 <div className="max-w-[560px] space-y-7">
+                  {Object.keys(errors).length > 0 && (
+                    <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md text-[12px] text-red-700">
+                      {Object.values(errors).join('. ')}
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <label className="block text-[12px] font-medium text-gray-900">Campaign name</label>
                     <input type="text" placeholder="New traffic campaign" value={campaignName}
-                      onChange={(e) => setCampaignName(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-[12px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-black transition-shadow" />
+                      onChange={(e) => { setCampaignName(e.target.value); if (errors.campaignName) setErrors(prev => { const n = { ...prev }; delete n.campaignName; return n }) }}
+                      className={`w-full border ${errors.campaignName ? 'border-red-400' : 'border-gray-300'} rounded-md px-3 py-1.5 text-[12px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-black transition-shadow`} />
+                    {errors.campaignName && <p className="text-[11px] text-red-500 mt-1">{errors.campaignName}</p>}
                   </div>
 
 
@@ -550,7 +557,12 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
                   </div>
                 </div>
                 <div className="flex justify-end mt-12 pr-4">
-                  <button onClick={() => setStep(2)}
+                  <button onClick={() => {
+                    const newErrors: Record<string, string> = {}
+                    if (!campaignName.trim()) newErrors.campaignName = 'Campaign name is required'
+                    setErrors(newErrors)
+                    if (Object.keys(newErrors).length === 0) setStep(2)
+                  }}
                     className="px-4 py-1.5 text-[11.5px] font-medium bg-black hover:bg-gray-800 text-white rounded-full transition-colors shadow-sm">
                     Continue
                   </button>
@@ -559,6 +571,11 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
             ) : step === 2 ? (
               <>
                 <div className="max-w-[680px] space-y-6 mx-auto">
+                  {Object.keys(errors).length > 0 && (
+                    <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md text-[12px] text-red-700">
+                      {Object.values(errors).join('. ')}
+                    </div>
+                  )}
                   {isBrowserPreview ? (
                     <>
                       <div className="space-y-2">
@@ -717,7 +734,13 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
                   )}
 
                   <div className="flex justify-end mt-12 pr-4">
-                    <button onClick={() => setStep(3)}
+                    <button onClick={() => {
+                      const newErrors: Record<string, string> = {}
+                      if (!adTitle.trim()) newErrors.adTitle = 'Ad title is required'
+                      if (!destinationUrl.trim()) newErrors.destinationUrl = 'Website URL is required'
+                      setErrors(newErrors)
+                      if (Object.keys(newErrors).length === 0) setStep(3)
+                    }}
                       className="px-4 py-1.5 text-[11.5px] font-medium bg-black hover:bg-gray-800 text-white rounded-full transition-colors shadow-sm">
                       Continue
                     </button>
