@@ -78,7 +78,7 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
   const [timezoneQuery, setTimezoneQuery] = useState('')
   const timezoneDropdownRef = useRef<HTMLDivElement>(null)
 
-  const [hasEndDate, setHasEndDate] = useState(false)
+  const [hasEndDate] = useState(true)
   const [endDate, setEndDate] = useState(new Date(2026, 4, 30))
   const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false)
   const [currentEndMonth, setCurrentEndMonth] = useState(new Date(2026, 4, 1))
@@ -449,13 +449,6 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
 
                   <div className="space-y-2 pt-1">
                     <label className="block text-[12px] font-medium text-gray-900">End date</label>
-                    <label className="flex items-center gap-2.5 cursor-pointer w-fit" onClick={(e) => { e.preventDefault(); setHasEndDate(!hasEndDate) }}>
-                      <div className={`w-4 h-4 rounded border ${hasEndDate ? 'bg-black border-black text-white' : 'border-gray-300 bg-white'} flex items-center justify-center transition-colors`}>
-                        {hasEndDate && <Check className="w-3 h-3" />}
-                      </div>
-                      <span className="text-[12px] text-gray-700 select-none">Set an end date</span>
-                    </label>
-                    {hasEndDate && (
                       <div className="flex items-center gap-3 mt-3">
                         <div className="relative w-[200px]" ref={endDatePickerRef}>
                           <div className="relative w-full cursor-pointer group" onClick={() => setIsEndDatePickerOpen(!isEndDatePickerOpen)}>
@@ -554,7 +547,6 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
                           </div>
                         </div>
                       </div>
-                    )}
                   </div>
                 </div>
                 <div className="flex justify-end mt-12 pr-4">
