@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import type { Campaign } from '../../types'
 import { apiFetch } from '../../lib/api'
 
-const Toggle = ({ active }: { active: boolean }) => {
+const Toggle = ({ active, onClick }: { active: boolean; onClick?: () => void }) => {
   return (
-    <div className={`relative inline-flex h-[14px] w-[26px] items-center rounded-full transition-colors ${active ? 'bg-black' : 'bg-[#e0e0e0]'}`}>
+    <div onClick={onClick} className={`relative inline-flex h-[14px] w-[26px] items-center rounded-full transition-colors cursor-pointer ${active ? 'bg-black' : 'bg-[#e0e0e0]'}`}>
       <span className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${active ? 'translate-x-[14px]' : 'translate-x-[2px] shadow-sm'}`} />
     </div>
   )
@@ -17,6 +17,19 @@ export default function CampaignTable() {
     try {
       const data = await apiFetch<Campaign[]>('/api/campaigns')
       setCampaigns(data)
+    } catch {
+      // silently fail
+    }
+  }
+
+  const toggleCampaign = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'Serving' ? 'Paused' : 'Serving'
+    try {
+      await apiFetch(`/api/campaigns/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      })
+      setCampaigns(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c))
     } catch {
       // silently fail
     }
@@ -62,7 +75,7 @@ export default function CampaignTable() {
                 <div className="w-3.5 h-3.5 border border-gray-300 rounded-[3px] bg-white group-hover:border-gray-400 transition-colors"></div>
               </td>
               <td className="py-5 px-3">
-                <Toggle active={campaign.status === 'Serving'} />
+                <Toggle active={campaign.status === 'Serving'} onClick={() => toggleCampaign(campaign.id, campaign.status)} />
               </td>
               <td className="py-5 px-3 text-[13px] text-gray-900 font-medium">
                 {campaign.name}
