@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Header from './Header'
-import Tabs from './Tabs'
+
 import CampaignTable from './CampaignTable'
 import CreateCampaignModal from './CreateCampaignModal'
 import ConnectorSelectionModal from './ConnectorSelectionModal'
@@ -52,7 +52,6 @@ export default function MainContent() {
         </div>
       )}
       <Header onCreateClick={() => setIsConnectorModalOpen(true)} />
-      <Tabs />
       <div className="flex-1 overflow-auto">
         <CampaignTable />
       </div>
