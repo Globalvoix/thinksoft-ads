@@ -239,16 +239,6 @@ app.get('/api/campaigns', requireAuth, async (req, res) => {
   res.json(rows)
 })
 
-// PATCH /api/campaigns/:id/status
-app.patch('/api/campaigns/:id/status', requireAuth, async (req, res) => {
-  const userId = req.auth?.userId
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' })
-  const { status } = req.body
-  if (!['Serving', 'Paused'].includes(status)) return res.status(400).json({ error: 'Invalid status' })
-  await sql`UPDATE campaigns SET status = ${status} WHERE id = ${req.params.id} AND user_id = ${userId}`
-  res.json({ ok: true })
-})
-
 // POST /api/campaigns
 app.post('/api/campaigns', requireAuth, async (req, res) => {
   try {

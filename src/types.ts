@@ -2,7 +2,7 @@ export interface Campaign {
   id: string
   name: string
   active: boolean
-  status: string
+  status: 'Serving' | 'Not serving'
   type: string
   impressions: number
   clicks: number
