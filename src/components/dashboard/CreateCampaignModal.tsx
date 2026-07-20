@@ -864,8 +864,6 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
                 <button
                   onClick={async () => {
                     setIsSaving(true)
-                    // Open window preemptively so browser doesn't block it as popup
-                    const paymentWindow = window.open('', '_blank')
                     try {
                       let displayUrl = 'thinksoft.dev'
                       try {
@@ -897,17 +895,11 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
                           })
                       })
                       if (result.checkoutUrl) {
-                        if (paymentWindow) {
-                          paymentWindow.location.href = result.checkoutUrl
-                        } else {
-                          window.location.href = result.checkoutUrl
-                        }
-                      } else {
-                        if (paymentWindow) paymentWindow.close()
+                        // Navigate current page to LS checkout — redirects back after payment
+                        window.location.href = result.checkoutUrl
                       }
                       setIsPublished(true)
                     } catch (e) {
-                      if (paymentWindow) paymentWindow.close()
                       alert('Failed to save campaign: ' + (e instanceof Error ? e.message : 'Network error'))
                     } finally {
                       setIsSaving(false)
