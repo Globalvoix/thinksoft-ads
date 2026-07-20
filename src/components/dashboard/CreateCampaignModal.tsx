@@ -895,8 +895,8 @@ export default function CreateCampaignModal({ isOpen, onClose, initialConnector 
                           })
                       })
                       if (result.checkoutUrl) {
-                        // Navigate current page to LS checkout — redirects back after payment
                         window.location.href = result.checkoutUrl
+                        return
                       }
                       setIsPublished(true)
                     } catch (e) {
