@@ -53,8 +53,9 @@ const hasLemonSqueezy = !!(LS_API_KEY && LS_STORE_ID && LS_VARIANT_ID)
 if (hasLemonSqueezy) console.log('[Thinksoft API] Lemon Squeezy enabled')
 else console.log('[Thinksoft API] Lemon Squeezy not configured — campaigns will skip payment')
 
-async function createLsCheckout(amountCents: number, campaignId: string, userId: string, name: string): Promise<string | null> {
+async function createLsCheckout(amountCents: number, campaignId: string, userId: string, name: string, baseUrl?: string): Promise<string | null> {
   if (!hasLemonSqueezy) return null
+  const appUrl = baseUrl || process.env.APP_URL || process.env.VITE_API_BASE_URL || 'http://localhost:5173'
   try {
     const resp = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
       method: 'POST',
@@ -71,7 +72,7 @@ async function createLsCheckout(amountCents: number, campaignId: string, userId:
             product_options: {
               name: `Thinksoft: ${name}`,
               description: 'Advertising campaign budget',
-              redirect_url: `${process.env.VITE_API_BASE_URL || 'http://localhost:5173'}/dashboard?payment=success&campaign=${campaignId}`,
+              redirect_url: `${appUrl}/dashboard?payment=success&campaign=${campaignId}`,
             },
           },
           relationships: {
@@ -296,7 +297,9 @@ app.post('/api/campaigns', requireAuth, async (req, res) => {
       totalAmount = baseAmount * days
     }
     const amountCents = Math.round(totalAmount * 100)
-    const checkoutUrl = await createLsCheckout(amountCents, campaignId, userId, name || 'Untitled')
+    const origin = req.headers.origin || req.headers.host || ''
+    const baseUrl = origin.startsWith('http') ? origin : `https://${origin}`
+    const checkoutUrl = await createLsCheckout(amountCents, campaignId, userId, name || 'Untitled', baseUrl)
 
     res.json({ campaignId, adId, checkoutUrl })
   } catch (e) {
@@ -511,6 +514,19 @@ app.post('/api/ads/:id/click', async (req, res) => {
     VALUES (${uid()}, ${req.params.id}, 'click', ${searchQuery})
   `
   res.json({ ok: true })
+})
+
+// --- Client-side payment confirmation ---
+app.post('/api/campaigns/confirm-payment', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId
+  const { campaignId } = req.body
+  if (!userId || !campaignId) return res.status(400).json({ error: 'Missing params' })
+  const result = await sql`
+    UPDATE campaigns SET status = 'Serving'
+    WHERE id = ${campaignId} AND user_id = ${userId} AND status = 'Pending Payment'
+    RETURNING id
+  `
+  res.json({ ok: true, updated: result.length > 0 })
 })
 
 // --- Lemon Squeezy webhook ---
